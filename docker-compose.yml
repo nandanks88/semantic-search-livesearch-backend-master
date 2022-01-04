@@ -1,0 +1,41 @@
+version: "3"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-API
+    image: "semantic-search-livesearch-api:0.7.1"
+    ports:
+      - 5000:5000
+    environment:
+      - ELASTICSEARCHDOCUMENTSTORE_PARAMS_HOST=elasticsearch
+      - MODELNAME_OR_PATH=deepset/roberta-base-squad2
+      - USE_GPU=0
+    restart: always
+    depends_on:
+      - elasticsearch
+    command: "/bin/bash -c 'sleep 15 && gunicorn main:app -b 0.0.0.0:5000 -k uvicorn.workers.UvicornWorker --workers 1 --timeout 180'"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
+    container_name: es01
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      # - node.name=es01
+      # - cluster.name=es-docker-cluster
+      # - cluster.initial_master_nodes=es01
+      # - bootstrap.memory_lock=true
+    restart: always
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+
+volumes:
+  esdata01:
+    driver: local
